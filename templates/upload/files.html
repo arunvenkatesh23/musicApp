@@ -27,15 +27,15 @@
                                 <th>Favourite</th>
                                 <th>Audio File</th>
                                 <th>Actions</th>
-                                <th>Folder</th>
+                                <th>Genre</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for file in folder_all %}
+                            {% for file in genre_all %}
                                 <tr>
                                     <td>{{ file.file_name }} [{{ file.genre }}]</td>
                                     <td>
-                                        <a href="{% url 'upload:favorite_file' file.folder.id file.id %}" class="btn-favorite"><span class="glyphicon glyphicon-heart {% if file.is_favorite %}active{% endif %}"></span></a>
+                                        <a href="{% url 'upload:favorite_file' file.genre.id file.id %}" class="btn-favorite"><span class="glyphicon glyphicon-heart {% if file.is_favorite %}active{% endif %}"></span></a>
                                     </td>
                                     <td>
                                         <a target="_blank" href="{{ file.file.url }}">
@@ -54,10 +54,10 @@
                                     </form>
                                 </td>
                                     <td>
-                                        <a href="{% url 'upload:detail' file.folder.id %}">
-                                            <img src="{{ file.folder.folder_image.url }}" class="img-responsive" style="width: 20px; float: left; margin-right: 10px;" />
+                                        <a href="{% url 'upload:detail' file.genre.id %}">
+                                            <img src="{{ file.genre.genre_image.url }}" class="img-responsive" style="width: 20px; float: left; margin-right: 10px;" />
                                         </a>
-                                        <a href="{% url 'upload:detail' file.folder.id %}">{{ file.folder.folder_name }}</a>
+                                        <a href="{% url 'upload:detail' file.genre.id %}">{{ file.genre.genre_name }}</a>
                                     </td>
                                 </tr>
                             {% endfor %}

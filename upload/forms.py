@@ -1,16 +1,16 @@
 from django import forms
-from .models import Folder, File
+from .models import Genre, File
 
 
 class FileForm(forms.ModelForm):
 
     class Meta:
         model = File
-        fields = ['file_name', 'file', 'genre']
+        fields = ['file_name', 'file']
 
 
-class FolderForm(forms.ModelForm):
+class GenreForm(forms.ModelForm):
 
     class Meta:
-        model = Folder
-        fields = ['folder_name', 'about_file', 'folder_image']
+        model = Genre
+        fields = ['genre_name', 'about_genre', 'genre_image']

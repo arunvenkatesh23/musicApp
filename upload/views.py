@@ -1,161 +1,176 @@
 from django.shortcuts import render, get_object_or_404, HttpResponseRedirect
 from django.db.models import Q
-from .forms import FileForm, FolderForm
-from .models import Folder, File
+from .forms import FileForm, GenreForm
+from .models import Genre, File
+from rest_framework import viewsets
+from .serializers import GenreSerializer, FileSerializer
+
 
 AUDIO_FILE_TYPES = ['wav', 'mp3', 'ogg']
 IMAGE_FILE_TYPES = ['png', 'jpg', 'jpeg']
+
+
+class GenreViewSet(viewsets.ModelViewSet):
+    queryset = Genre.objects.all().order_by('-id')
+    serializer_class = GenreSerializer
+
+
+class FileViewSet(viewsets.ModelViewSet):
+    queryset = File.objects.all().order_by('-id')
+    serializer_class = FileSerializer
 
 
 def create_folder(request):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
     else:
-        form = FolderForm(request.POST or None, request.FILES or None)
+        form = GenreForm(request.POST or None, request.FILES or None)
         if form.is_valid():
-            folder = form.save(commit=False)
-            folder.user = request.user
-            folder.folder_image = request.FILES['folder_image']
-            file_type = folder.folder_image.url.split('.')[-1]
+            genre = form.save(commit=False)
+            genre.user = request.user
+            genre.genre_image = request.FILES['genre_image']
+            file_type = genre.genre_image.url.split('.')[-1]
             file_type = file_type.lower()
             if file_type not in IMAGE_FILE_TYPES:
                 context = {
-                    'folder': folder,
+                    'genre': genre,
                     'form': form,
                     'error_message': 'Image file must be PNG, JPG, or JPEG',
                 }
                 return render(request, 'upload/folder_form.html', context)
-            folder.save()
-            return render(request, 'upload/detail.html', {'folder': folder})
+            genre.save()
+            return render(request, 'upload/detail.html', {'genre': genre})
         context = {
             "form": form,
         }
         return render(request, 'upload/folder_form.html', context)
 
 
-def create_file(request, folder_id):
+def create_file(request, genre_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
     else:
         form = FileForm(request.POST or None, request.FILES or None)
-        folder = get_object_or_404(Folder, pk=folder_id)
+        genre = get_object_or_404(Genre, pk=genre_id)
         if form.is_valid():
-            folder_files = folder.file_set.all()
-            for s in folder_files:
+            genre_files = genre.file_set.all()
+            for s in genre_files:
                 if s.file_name == form.cleaned_data.get("file_name"):
                     context = {
-                        'folder': folder,
+                        'genre': genre,
                         'form': form,
                         'error_message': 'You already added that file',
                     }
                     return render(request, 'upload/file_form.html', context)
             file = form.save(commit=False)
             file.user = request.user
-            file.folder = folder
+            file.genre = genre
             file.file = request.FILES['file']
             file_type = file.file.url.split('.')[-1]
             file_type = file_type.lower()
             if file_type not in AUDIO_FILE_TYPES:
                 context = {
-                    'folder': folder,
+                    'genre': genre,
                     'form': form,
                     'error_message': 'Audio file must be WAV, MP3, or OGG',
                 }
                 return render(request, 'upload/file_form.html', context)
 
             file.save()
-            return render(request, 'upload/detail.html', {'folder': folder})
+            return render(request, 'upload/detail.html', {'genre': genre})
         context = {
-            'folder': folder,
+            'genre': genre,
             'form': form,
         }
         return render(request, 'upload/file_form.html', context)
 
 
-def update_folder(request, folder_id):
+def update_folder(request, genre_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
     else:
-        folder = get_object_or_404(Folder, pk=folder_id)
+        genre = get_object_or_404(Genre, pk=genre_id)
         if request.POST:
-            form = FolderForm(request.POST or None, request.FILES or None, instance=folder)
+            form = GenreForm(request.POST or None, request.FILES or None, instance=genre)
             if form.is_valid():
-                form.folder_image = request.FILES['folder_image']
-                file_type = folder.folder_image.url.split('.')[-1]
+                form.genre_image = request.FILES['genre_image']
+                file_type = genre.genre_image.url.split('.')[-1]
                 file_type = file_type.lower()
                 if file_type not in IMAGE_FILE_TYPES:
                     context = {
-                        'folder': folder,
+                        'genre': genre,
                         'form': form,
                         'error_message': 'Image file must be PNG, JPG, or JPEG',
                     }
                     return render(request, 'upload/update_folder.html', context)
                 form.save()
-                fold = Folder.objects.all()
+                gen = Genre.objects.all()
                 context = {
-                    "folder": fold
+                    "genre": gen
                 }
                 return render(request, 'upload/index.html', context)
             else:
-                folder = Folder.objects.get(pk=folder_id)
-                form = FolderForm(request.POST, instance=folder)
+                genre = Genre.objects.get(pk=genre_id)
+                form = GenreForm(request.POST, instance=genre)
                 context = {
                     "form": form,
                 }
                 return render(request, 'upload/update_folder.html', context)
 
 
-def delete_folder(request, folder_id):
+def rename_file(request, genre_id, file_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
     else:
-        folder = get_object_or_404(Folder, pk=folder_id)
-        folder.delete()
-        fold = Folder.objects.all()
-        return render(request, 'upload/index.html', {'folder': fold})
-
-
-def delete_file(request, folder_id, file_id):
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect('/login/')
-    else:
-        folder = get_object_or_404(Folder, pk=folder_id)
-        file = File.objects.get(pk=file_id)
-        file.delete()
-        return render(request, 'upload/detail.html', {'folder': folder})
-
-
-def rename_file(request, folder_id, file_id):
-    if not request.user.is_authenticated():
-        return HttpResponseRedirect('/login/')
-    else:
-        folder = get_object_or_404(Folder, pk=folder_id)
+        genre = get_object_or_404(Genre, pk=genre_id)
         file = File.objects.get(pk=file_id)
         data = {
             'file_name': file.file_name,
             'file': file.file,
-            'genre': file.genre,
         }
-        user = request.user
-        # form = FileForm(request.POST or None, instance=folder, initial=data)
         if request.POST:
-            form = FileForm(request.POST or None, request.FILES or None, instance=folder, initial=data)
+            form = FileForm(request.POST or None, request.FILES or None, initial=data)
             if form.is_valid():
-                file.file_name = request.POST['file_name']
-                file.genre = request.POST['genre']
-                form.save()
+                user = request.user
+                user.file_name = request.POST['file_name']
+                user.save()
                 context = {
-                    'folder': folder,
-                    'user': user,
+                    "genre": genre,
                 }
                 return render(request, 'upload/detail.html', context)
-            return render(request, 'upload/update_file.html', {'form': form})
-        form = FileForm(request.POST or None, request.FILES or None, initial=data)
+            else:
+                file = File.objects.get(pk=file_id)
+                form = FileForm(request.POST, instance=file)
+                context = {
+                    "form": form,
+                }
+                return render(request, 'upload/update_file.html', context)
+        form = FileForm(request.POST or None, request.FILES or None, instance=genre, initial=data)
         context = {
-            'folder': folder,
+            "genre": genre,
             'form': form,
         }
         return render(request, 'upload/update_file.html', context)
+
+
+def delete_folder(request, genre_id):
+    if not request.user.is_authenticated():
+        return HttpResponseRedirect('/login/')
+    else:
+        genre = get_object_or_404(Genre, pk=genre_id)
+        genre.delete()
+        gen = Genre.objects.all()
+        return render(request, 'upload/index.html', {'genre': gen})
+
+
+def delete_file(request, genre_id, file_id):
+    if not request.user.is_authenticated():
+        return HttpResponseRedirect('/login/')
+    else:
+        genre = get_object_or_404(Genre, pk=genre_id)
+        file = File.objects.get(pk=file_id)
+        file.delete()
+        return render(request, 'upload/detail.html', {'genre': genre})
 
 
 def files_delete(request, file_id):
@@ -165,37 +180,37 @@ def files_delete(request, file_id):
         file = File.objects.get(pk=file_id)
         file.delete()
         fil = File.objects.all()
-        return render(request, 'upload/files.html', {'folder_all': fil})
+        return render(request, 'upload/files.html', {'genre_all': fil})
 
 
-def detail(request, folder_id):
+def detail(request, genre_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
     else:
         user = request.user
-        folder = get_object_or_404(Folder, pk=folder_id)
-        return render(request, 'upload/detail.html', {'folder': folder, 'user': user})
+        genre = get_object_or_404(Genre, pk=genre_id)
+        return render(request, 'upload/detail.html', {'genre': genre, 'user': user})
 
 
 def index(request):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
     else:
-        folder = Folder.objects.filter(user=request.user)
+        genre = Genre.objects.filter(user=request.user)
         file_results = File.objects.all()
         query = request.GET.get("q")
         if query:
-            folder = folder.filter(
-                Q(folder_name__icontains=query)
+            genre = genre.filter(
+                Q(genre_name__icontains=query)
             ).distinct()
             file_results = file_results.filter(
                 Q(file_name__icontains=query)
             ).distinct()
             return render(request, 'upload/index.html', {
-                'folder': folder,
+                'genre': genre,
                 'files': file_results,
             })
-        return render(request, 'upload/index.html', {'folder': folder})
+        return render(request, 'upload/index.html', {'genre': genre})
 
 
 def files(request, filter_by):
@@ -204,16 +219,16 @@ def files(request, filter_by):
     else:
         try:
             file_ids = []
-            for folder in Folder.objects.filter(user=request.user):
-                for file in folder.file_set.all():
+            for genre in Genre.objects.filter(user=request.user):
+                for file in genre.file_set.all():
                     file_ids.append(file.pk)
             users_files = File.objects.filter(pk__in=file_ids)
             if filter_by == 'favorites':
                 users_files = users_files.filter(is_favorite=True)
-        except Folder.DoesNotExist:
+        except Genre.DoesNotExist:
             users_files = []
         context = {
-            'folder_all': users_files,
+            'genre_all': users_files,
             'filter_by': filter_by,
         }
         return render(request, 'upload/files.html', context)
@@ -224,16 +239,16 @@ def folders(request, filter_by):
         return HttpResponseRedirect('/login/')
     else:
         try:
-            folder_ids = []
-            for folder in Folder.objects.filter(user=request.user):
-                folder_ids.append(folder.pk)
-            users_folders = Folder.objects.filter(pk__in=folder_ids)
+            genre_ids = []
+            for genre in Genre.objects.filter(user=request.user):
+                genre_ids.append(genre.pk)
+            users_genres = Genre.objects.filter(pk__in=genre_ids)
             if filter_by == 'favorites':
-                users_folders = users_folders.filter(is_favorite=True)
-        except Folder.DoesNotExist:
-            users_folders = []
+                users_genres = users_genres.filter(is_favorite=True)
+        except Genre.DoesNotExist:
+            users_genres = []
         context = {
-            'folder': users_folders,
+            'genre': users_genres,
             'filter_by': filter_by,
         }
         return render(request, 'upload/folders.html', context)
@@ -246,7 +261,7 @@ def profile_settings(request):
         return render(request, 'upload/profile_settings.html')
 
 
-def favorite_file(request, folder_id, file_id):
+def favorite_file(request, genre_id, file_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
     else:
@@ -257,18 +272,18 @@ def favorite_file(request, folder_id, file_id):
             file.is_favorite = True
         file.save()
         user = request.user
-        folder = get_object_or_404(Folder, pk=folder_id)
-        return render(request, 'upload/detail.html', {'folder': folder, 'user': user})
+        genre = get_object_or_404(Genre, pk=genre_id)
+        return render(request, 'upload/detail.html', {'genre': genre, 'user': user})
 
 
-def favorite_folder(request, folder_id):
+def favorite_folder(request, genre_id):
     if not request.user.is_authenticated():
         return HttpResponseRedirect('/login/')
     else:
-        folder = get_object_or_404(Folder, pk=folder_id)
-        if folder.is_favorite:
-            folder.is_favorite = False
+        genre = get_object_or_404(Genre, pk=genre_id)
+        if genre.is_favorite:
+            genre.is_favorite = False
         else:
-            folder.is_favorite = True
-        folder.save()
+            genre.is_favorite = True
+        genre.save()
         return HttpResponseRedirect('/app/folders/')

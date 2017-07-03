@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Folder, File
+from .models import Genre, File
 
-admin.site.register(Folder)
+admin.site.register(Genre)
 admin.site.register(File)

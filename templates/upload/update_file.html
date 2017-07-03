@@ -1,5 +1,5 @@
 {% extends 'upload/base.html' %}
-{% block title %}MusicApp | Rename File{% endblock %}
+{% block title %}MusicApp | Rename Track{% endblock %}
 {% block folder_active %}active{% endblock %}
 
 {% block navigation %}
@@ -11,15 +11,15 @@
         <div class="col-sm-4 col-md-3">
             <div class="panel panel-default" style="background: transparent">
                 <div class="panel-body">
-                        <a href="{% url 'upload:detail' folder.id %}">
-                            {% if folder.folder_image %}
-                                <img src="{{ folder.folder_image.url }}" class="img-responsive">
+                        <a href="{% url 'upload:detail' genre.id %}">
+                            {% if genre.genre_image %}
+                                <img src="{{ genre.genre_image.url }}" class="img-responsive">
                             {% else %}
                                 <h3>No image to display</h3>
                             {% endif %}
                         </a>
-                    <h3>{{ folder.folder_name }}</h3>
-                    <h5><small>{{ folder.about_file }}</small></h5>
+                    <h3>{{ genre.genre_name }}</h3>
+                    <h5><small>{{ genre.about_genre }}</small></h5>
                 </div>
             </div>
         </div>
@@ -29,13 +29,13 @@
 
             <div class="panel panel-default" style="background: transparent; border: transparent">
                 <div class="panel-body">
-                    <h3>Add a New Song</h3>
+                    <h3>Edit Track</h3>
                     {% if error_message %}
                         <p><strong><font color="#dc143c">{{ error_message }}</font></strong></p>
                     {% endif %}
                     <form class="form-horizontal" role="form" action="" method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        <input type="hidden" name="folder" value="{{ folder }}">
+                        <input type="hidden" name="genre" value="{{ genre }}">
                         {% include 'upload/form-template.html' %}
                         <div class="form-group">
                             <div class="col-sm-offset-4 col-sm-10">
